@@ -83,7 +83,8 @@ case: ifPn => [|i0].
   rewrite /vander_k -{2}(add1n k) iotaD rev_cat foldl_cat addn1.
   rewrite -subSn // subSS -/(vander_k a _ k) subSS /= /mat_lc.
   case: ifP => [|nk0].
-    move/eqP => /(congr1 (fun x => nat_of_ord x)) /=.
+    move/eqP.
+    move => /(congr1 (fun x => nat_of_ord x)) /=.
     rewrite inordK; last by rewrite ltnS leq_subr.
     move/eqP.
     rewrite subn_eq0 => nk.
@@ -191,6 +192,8 @@ rewrite inordK // inordK // (ltn_trans _ (ltn_ord i)) // -subn1.
 by rewrite -{2}(subn0 i) ltn_sub2l // lt0n.
 Qed.
 
+Set Printing Coercions.
+
 Lemma vander_k_max n (a : 'rV[R]_n.+1) (M : 'M[R]_n.+1) :
   vander_k a M n.+1 = vander_k a M n.
 Proof.
@@ -205,6 +208,31 @@ rewrite subnn leq0n -ltnS ltn_ord /=.
 rewrite vander_k_rec ?leq_pred //; last by rewrite -ltnS ltn_ord.
 rewrite (negbTE i0) -(ltnS i) ltn_ord andbT.
 by rewrite /= subSn // subnn lt0n i0.
+Qed.
+
+Lemma vander_k_recurrence_relation n (a : 'rV[R]_n.+1) (k : nat) (M : 'M[R]_n.+1) :
+  k < n ->
+  vander_k a M k.+1 = mat_lc (a``_ord0) (vander_k a M k) (inord (n - k)).
+Proof.
+  move=> hKLtnN.
+  rewrite {1} /vander_k.
+  rewrite subSS.
+  rewrite (_ : iota (n - k) k.+1 = iota (n - k) 1 ++ iota (n - k + 1) k); last first.
+  by rewrite // - iotaD.
+  rewrite rev_cat.
+  rewrite {2} /iota.
+  rewrite {2} /rev /=.
+  rewrite foldl_cat.
+  rewrite (_ : ((n - k)%N + 1)%N = (n.+1 - k)%N).
+  rewrite (_ : foldl (fun (acc : 'M_n.+1) (x : nat) => mat_lc (fun_of_matrix a ord0 ord0) acc (inord x)) M
+       (rev (iota (n.+1 - k) k)) = (vander_k a M k)); last first.
+  by rewrite -/vander_k.
+  by rewrite /foldl.
+  rewrite addnBAC.
+  rewrite (_ : (n + 1)%N = n.+1); last first.
+  by rewrite addn1.
+  done.
+  by rewrite ltnW.
 Qed.
 
 Lemma det_vander_k_rec n (a : 'rV[R]_n.+1) (k : nat) (M : 'M[R]_n.+1) : k < n.+1 ->
