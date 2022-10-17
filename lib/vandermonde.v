@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
-Require Import ssralg_ext.
+(* Require Import ssralg_ext. *)
 
 (******************************************************************************)
 (*                         Vandermonde Matrices                               *)
@@ -21,6 +21,16 @@ Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
+
+Declare Scope vec_ext_scope.
+Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
+Open Scope vec_ext_scope.
+
+Check iter.
+
+Lemma iter_addr0 (R : ringType) : forall n x, iter n (+%R (0 : R)) x = x.
+Proof. elim=> // n IH x. rewrite /=. by rewrite IH add0r. Qed.
+
 Local Open Scope vec_ext_scope.
 
 Section vandermonde_matrix.
@@ -66,23 +76,32 @@ Lemma vander_k_rec n (a : 'rV[R]_n.+1) k : k <= n.+1 ->
   else
     row (inord i) M.
 Proof.
-elim: k => [n0 i ni|k IH].
+elim: k => [n0 i ni|k_sub IH].
   move=> M.
   case: ifPn => [/eqP ->|n0'].
     rewrite /vander_k /= (_ : inord 0 = 0) //.
-    apply/val_inj => /=; by rewrite inordK.
-  by rewrite subn0 ni andbT ltnNge ni.
-rewrite ltnS => kn i ni M.
+    apply/val_inj => /=. by rewrite inordK.
+  rewrite subn0.
+  rewrite ni.
+  rewrite andbT.
+  rewrite ltnNge.
+  by rewrite ni.
+rewrite ltnS.
+move => kn i ni M.
 case: ifPn => [|i0].
   move/eqP => ?; subst i.
-  rewrite /vander_k -{2}(add1n k) iotaD rev_cat foldl_cat addn1.
-  rewrite -subSn // subSS -/(vander_k a _ k) subSS /= /mat_lc.
+  rewrite /vander_k.
+  rewrite -{2}(add1n k_sub).
+  rewrite iotaD.
+  rewrite rev_cat.
+  rewrite foldl_cat addn1.
+  rewrite -subSn // subSS -/(vander_k a _ k_sub) subSS /= /mat_lc.
   case: ifP => [|nk0].
     move/eqP => /(congr1 (fun x => nat_of_ord x)) /=.
     rewrite inordK; last by rewrite ltnS leq_subr.
     move/eqP.
     rewrite subn_eq0 => nk.
-    have ? : n = k by apply/eqP; rewrite eqn_leq kn nk.
+    have ? : n = k_sub by apply/eqP; rewrite eqn_leq kn nk.
    by rewrite IH // ltnW.
   rewrite rowK eq_sym (_ : inord 0 = 0) //; last first.
     apply/val_inj => /=; by rewrite inordK.
@@ -93,15 +112,15 @@ case: ifPn => [|i0].
   rewrite eqxx (_ : inord 0 = 0) //.
   apply/val_inj => /=.
   by rewrite inordK.
-rewrite {1}/vander_k -{2}(add1n k) iotaD rev_cat foldl_cat.
-rewrite addn1 -subSn // subSS -/(vander_k a _ k) subSS /= /mat_lc.
+rewrite {1}/vander_k -{2}(add1n k_sub) iotaD rev_cat foldl_cat.
+rewrite addn1 -subSn // subSS -/(vander_k a _ k_sub) subSS /= /mat_lc.
 case: ifP => [|nk0].
   move/eqP/(congr1 (fun x => nat_of_ord x)) => /=.
   rewrite inordK //; last  by rewrite ltnS leq_subr.
   move/eqP.
   rewrite subn_eq0 => nk.
-  have ? : n = k by apply/eqP; rewrite eqn_leq kn nk.
-  subst k.
+  have ? : n = k_sub by apply/eqP; rewrite eqn_leq kn nk.
+  subst k_sub.
   by rewrite subnn leq0n /= ni IH // (negbTE i0) subSn // subnn lt0n i0 ni.
 rewrite rowK.
 case: ifPn => [|nik].
@@ -134,7 +153,7 @@ case: ifPn => nki.
   rewrite (negbTE i0) ni andbT.
   case: ifPn => [nki' //|].
   rewrite -ltnNge subSn // ltnS => abs.
-  have abs' : (i = n - k)%N by apply/eqP; rewrite eqn_leq nki abs.
+  have abs' : (i = n - k_sub)%N by apply/eqP; rewrite eqn_leq nki abs.
   exfalso.
   move/eqP : nik; apply.
   apply/val_inj => /=.
@@ -186,6 +205,8 @@ rewrite inordK // inordK // (ltn_trans _ (ltn_ord i)) // -subn1.
 by rewrite -{2}(subn0 i) ltn_sub2l // lt0n.
 Qed.
 
+Set Printing Coercions.
+
 Lemma vander_k_max n (a : 'rV[R]_n.+1) (M : 'M[R]_n.+1) :
   vander_k a M n.+1 = vander_k a M n.
 Proof.
@@ -195,12 +216,22 @@ rewrite (_ : i = inord i); last first.
   by rewrite inordK.
 rewrite vander_k_rec //; last by rewrite -ltnS.
 case: ifPn => i0.
-  by rewrite (eqP i0) vander_k_rec // leq_pred.
-rewrite subnn leq0n -ltnS ltn_ord /=.
-rewrite vander_k_rec ?leq_pred //; last by rewrite -ltnS ltn_ord.
-rewrite (negbTE i0) -(ltnS i) ltn_ord andbT.
-by rewrite /= subSn // subnn lt0n i0.
+  by rewrite (eqP i0) vander_k_rec.
+rewrite subnn.
+rewrite leq0n.
+rewrite -ltnS.
+rewrite ltn_ord /=.
+rewrite vander_k_rec ?leq_pred //; last by rewrite -ltnS.
+rewrite (negbTE i0).
+rewrite -(ltnS i) ltn_ord.
+rewrite andbT.
+rewrite /= subSn // subnn.
+by rewrite lt0n i0.
 Qed.
+
+Locate "-".
+
+Search leq S subn.
 
 Lemma det_vander_k_rec n (a : 'rV[R]_n.+1) (k : nat) (M : 'M[R]_n.+1) : k < n.+1 ->
   \det (vander_k a M k) = \det (vander_k a M k.-1).
