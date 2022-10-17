@@ -83,8 +83,7 @@ case: ifPn => [|i0].
   rewrite /vander_k -{2}(add1n k) iotaD rev_cat foldl_cat addn1.
   rewrite -subSn // subSS -/(vander_k a _ k) subSS /= /mat_lc.
   case: ifP => [|nk0].
-    move/eqP.
-    move => /(congr1 (fun x => nat_of_ord x)) /=.
+    move/eqP => /(congr1 (fun x => nat_of_ord x)) /=.
     rewrite inordK; last by rewrite ltnS leq_subr.
     move/eqP.
     rewrite subn_eq0 => nk.
