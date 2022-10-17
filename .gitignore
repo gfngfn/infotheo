@@ -6,3 +6,6 @@
 *~
 Makefile.conf
 *.aux
+.Makefile.coq.d
+Makefile.coq
+Makefile.coq.conf

@@ -2,7 +2,6 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
-Require Import ssralg_ext.
 
 (******************************************************************************)
 (*                         Vandermonde Matrices                               *)
@@ -21,7 +20,13 @@ Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
-Local Open Scope vec_ext_scope.
+
+Declare Scope vec_ext_scope.
+Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
+Open Scope vec_ext_scope.
+
+Lemma iter_addr0 (R : ringType) : forall n x, iter n (+%R (0 : R)) x = x.
+Proof. elim=> // n IH x. rewrite /=. by rewrite IH add0r. Qed.
 
 Section vandermonde_matrix.
 
